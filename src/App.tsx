@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { QRCodeSVG } from "qrcode.react";
 import { createClient } from "@supabase/supabase-js";
 import "./App.css";
 type Claim = {
@@ -118,34 +119,21 @@ const goodCount = claims.filter(
       );
     }
 
-    query = query.order("number_of_treatments", {
-  ascending: true,
+ query = query.order(sortColumn, {
+  ascending,
 });
 
     const { data, error } = await query;
 
     if (error) {
-      console.error(
-        "Supabase error:",
-        error.message
-      );
-      const sorted = [...(data || [])].sort(
-  (a, b) => {
-    const aNum =
-  (a as any).number_of_treatments ?? 999;
+  console.error(
+    "Supabase error:",
+    error.message
+  );
+  return;
+}
 
-const bNum =
-  (b as any).number_of_treatments ?? 999;
-
-    return aNum - bNum;
-  }
-);
-
-setClaims(sorted);
-      return;
-    }
-
-    setClaims(data || []);
+setClaims(data || []);
   }
 
   async function useOneSession(
@@ -333,183 +321,192 @@ const lastVisit = (claim as any).last_visit;
 
       <table>
         <thead>
-          <tr>
-            <th
-              onClick={() =>
-                handleSort(
-                  "patient_name"
-                )
-              }
-            >
-              Patient
-              {sortLabel(
-                "patient_name"
-              )}
-            </th>
+  <tr>
+    <th onClick={() => handleSort("patient_name")}>
+      Patient
+      {sortLabel("patient_name")}
+    </th>
 
-            <th
-              onClick={() =>
-                handleSort(
-                  "session_referral"
-                )
-              }
-            >
-              Session Referral
-              {sortLabel(
-                "session_referral"
-              )}
-            </th>
+    <th onClick={() => handleSort("session_referral")}>
+      Session Referral
+      {sortLabel("session_referral")}
+    </th>
 
-            <th
-              onClick={() =>
-                handleSort(
-                  "number_of_treatments"
-                )
-              }
-            >
-              Treatments
-              {sortLabel(
-                "number_of_treatments"
-              )}
-            </th>
+    <th
+      onClick={() =>
+        handleSort("number_of_treatments")
+      }
+    >
+      Treatments
+      {sortLabel(
+        "number_of_treatments"
+      )}
+    </th>
 
-            <th
-              onClick={() =>
-                handleSort("status")
-              }
-            >
-              Status
-              {sortLabel("status")}
-            </th>
+    <th>Priority</th>
 
-            <th
-              onClick={() =>
-                handleSort("notes")
-              }
-            >
-              Notes
-              {sortLabel("notes")}
-            </th>
-<th>Wallet</th>
-            <th>Priority</th>
-<th>Need Action</th>
-<th>Action</th>
-          </tr>
-        </thead>
+    <th>Need Action</th>
 
-        <tbody>
-          {claims.map((claim) => (
-            <tr
-  key={claim.id}
-  className={
-    (claim.number_of_treatments ?? 0) <= 2
-      ? "row-critical"
-      : (claim.number_of_treatments ?? 0) <= 5
-      ? "row-warning"
-      : ""
-  }
->
-  
-  <td>
-  {(claim.number_of_treatments ?? 0) === 0 ? (
-    <span className="renew-now">
-      🚨 RENEW NOW
-    </span>
-  ) : (claim.number_of_treatments ?? 0) <= 2 ? (
-    <span className="critical-text">
-      🔴 Critical
-    </span>
-  ) : (claim.number_of_treatments ?? 0) <= 5 ? (
-    <span className="warning-text">
-      🟡 Warning
-    </span>
-  ) : (
-    <span className="good-text">
-      🟢 Good
-    </span>
-  )}
-</td>
-<td>
-  {(claim.number_of_treatments ?? 0) === 0
-    ? "🚨 Renew Authorization"
-    : (claim.number_of_treatments ?? 0) <= 2
-    ? "📞 Call Patient"
-    : (claim.number_of_treatments ?? 0) <= 5
-    ? "⚠ Monitor"
-    : "✅ OK"}
-</td>
-              <td>
-                {claim.patient_name ||
-                  ""}
-              </td>
+    <th>Action</th>
 
-              <td>
-                {claim.session_referral ||
-                  ""}
-              </td>
+    <th onClick={() => handleSort("status")}>
+      Status
+      {sortLabel("status")}
+    </th>
 
-              <td>
-  <button
-    onClick={() => generateCard(claim)}
-  >
-    Generate Card
-  </button>
-</td>
+    <th>Wallet</th>
 
-              <td>
-                <span
-                  style={{
-                    color:
-                      (claim.number_of_treatments ?? 0) <= 2
-                        ? "red"
-                        : "black",
-                    fontWeight:
-                      (claim.number_of_treatments ?? 0) <= 2
-                        ? "bold"
-                        : "normal",
-                    fontSize:
-                      (claim.number_of_treatments ?? 0) <= 2
-                        ? "20px"
-                        : "16px",
-                  }}
-                >
-                  {claim.number_of_treatments ??
-                    ""}
-                </span>
-              </td>
+    <th onClick={() => handleSort("notes")}>
+      Notes
+      {sortLabel("notes")}
+    </th>
+  </tr>
+</thead>
 
-              <td>
-                {claim.status || ""}
-              </td>
+<tbody>
+  {claims.map((claim) => (
+    <tr
+      key={claim.id}
+      className={
+        (claim.number_of_treatments ?? 0) <= 2
+          ? "row-critical"
+          : (claim.number_of_treatments ?? 0) <= 5
+          ? "row-warning"
+          : ""
+      }
+    >
+      {/* Patient */}
+      <td>{claim.patient_name || ""}</td>
 
-              <td>
-                {claim.notes || ""}
-              </td>
+      {/* Session Referral */}
+      <td>
+        {claim.session_referral || ""}
+      </td>
 
-              <td>
-                <button
-  className={
-    (claim.number_of_treatments ?? 0) === 0
-      ? "renew-button"
-      : ""
-  }
-  onClick={() => {
-    console.log("FULL CLAIM:", claim);
-    console.log("ID:", claim.id);
-    console.log("PATIENT:", claim.patient_name);
+      {/* Treatments */}
+      <td>
+        <span
+          style={{
+            color:
+              (claim.number_of_treatments ??
+                0) <= 2
+                ? "red"
+                : "black",
+            fontWeight:
+              (claim.number_of_treatments ??
+                0) <= 2
+                ? "bold"
+                : "normal",
+            fontSize:
+              (claim.number_of_treatments ??
+                0) <= 2
+                ? "20px"
+                : "16px",
+          }}
+        >
+          {claim.number_of_treatments ??
+            ""}
+        </span>
+      </td>
 
-    useOneSession(
-  claim.id,
-  claim.patient_name ?? ""
-);
-  }}
->
-  Use 1 Session
-</button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
+      {/* Priority */}
+      <td>
+        {(claim.number_of_treatments ??
+          0) === 0 ? (
+          <span className="renew-now">
+            🚨 RENEW NOW
+          </span>
+        ) : (claim.number_of_treatments ??
+            0) <=
+          2 ? (
+          <span className="critical-text">
+            🔴 Critical
+          </span>
+        ) : (claim.number_of_treatments ??
+            0) <=
+          5 ? (
+          <span className="warning-text">
+            🟡 Warning
+          </span>
+        ) : (
+          <span className="good-text">
+            🟢 Good
+          </span>
+        )}
+      </td>
+
+      {/* Need Action */}
+      <td>
+        {(claim.number_of_treatments ??
+          0) === 0
+          ? "🚨 Renew Authorization"
+          : (claim.number_of_treatments ??
+              0) <=
+            2
+          ? "📞 Call Patient"
+          : (claim.number_of_treatments ??
+              0) <=
+            5
+          ? "⚠ Monitor"
+          : "✅ OK"}
+      </td>
+
+      {/* Action */}
+      <td>
+        <button
+          className={
+            (claim.number_of_treatments ??
+              0) === 0
+              ? "renew-button"
+              : ""
+          }
+          onClick={() =>
+            useOneSession(
+              claim.id,
+              claim.patient_name ?? ""
+            )
+          }
+        >
+          Use 1 Session
+        </button>
+      </td>
+
+      {/* Status */}
+      <td>
+        {claim.status || ""}
+      </td>
+
+      {/* Wallet */}
+      <td>
+        {claim.wallet_id ? (
+          <div>
+            <div>
+              {claim.wallet_id}
+            </div>
+
+            <QRCodeSVG
+              value={claim.wallet_id}
+              size={70}
+            />
+          </div>
+        ) : (
+          <button
+            onClick={() =>
+              generateCard(claim)
+            }
+          >
+            Generate Card
+          </button>
+        )}
+      </td>
+
+      {/* Notes */}
+      <td>
+        {claim.notes || ""}
+      </td>
+    </tr>
+  ))}
+</tbody>
       </table>
     </div>
   );
