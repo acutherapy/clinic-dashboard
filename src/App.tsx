@@ -9,6 +9,12 @@ type Claim = {
   number_of_treatments?: number;
   status?: string;
   notes?: string;
+  wallet_id?: string;
+  qr_code?: string;
+  wallet_created?: boolean;
+  last_scan?: string;
+
+  claim_id?: number | string;
 };
 
 const supabaseUrl =
@@ -160,24 +166,6 @@ if (remaining <= 0) {
   return;
 }
 
-const lastVisit = (claim as any).last_visit;
-
-// if (lastVisit) {
-//   const last = new Date(lastVisit).getTime();
-//   const now = new Date().getTime();
-
-//   const hours =
-//     (now - last) / (1000 * 60 * 60);
-
-//   if (hours < 8) {
-//     alert(
-//       `Already checked in within ${hours.toFixed(
-//         1
-//       )} hours`
-//     );
-//     return;
-//   }
-// }
     if (!ok) return;
 
     const { error } = await supabase.rpc(
