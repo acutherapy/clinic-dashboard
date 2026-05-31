@@ -1,0 +1,450 @@
+import { useEffect, useState } from "react";
+import { createClient } from "@supabase/supabase-js";
+import "./App.css";
+
+const supabaseUrl =
+  import.meta.env.VITE_SUPABASE_URL;
+
+const supabaseKey =
+  import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+const supabase = createClient(
+  supabaseUrl,
+  supabaseKey
+);
+
+const statusOptions = [
+  "All",
+  "Open",
+  "Closed",
+  "open",
+  "closed",
+  "active",
+  "pending",
+  "approved",
+  "denied",
+  "expired",
+  "completed",
+  "cancelled",
+  "following_up",
+  "rfs_acu",
+  "rfs_mass",
+  "dislike",
+];
+
+const notesOptions = [
+  "All",
+  "call",
+  "text",
+  "schedule",
+  "need auth",
+  "no answer",
+  "done",
+];
+
+export default function App() {
+  const [claims, setClaims] = useState<any[]>([]);
+  const [statusFilter, setStatusFilter] =
+    useState("All");
+
+  const [notesFilter, setNotesFilter] =
+    useState("All");
+
+  const [sortColumn, setSortColumn] =
+    useState("number_of_treatments");
+
+  const [ascending, setAscending] =
+    useState(true);
+
+    const criticalCount = claims.filter(
+  (c) => (c.number_of_treatments ?? 0) <= 2
+).length;
+
+const warningCount = claims.filter((c) => {
+  const n = c.number_of_treatments ?? 0;
+  return n >= 3 && n <= 5;
+}).length;
+
+const goodCount = claims.filter(
+  (c) => (c.number_of_treatments ?? 0) > 5
+).length;
+
+  async function loadClaims() {
+    let query = supabase
+      .from("insurance_claims")
+      .select("*");
+
+    if (statusFilter !== "All") {
+      query = query.eq(
+        "status",
+        statusFilter
+      );
+    }
+
+    if (notesFilter !== "All") {
+      query = query.eq(
+        "notes",
+        notesFilter
+      );
+    }
+
+    query = query.order("number_of_treatments", {
+  ascending: true,
+});
+
+    const { data, error } = await query;
+
+    if (error) {
+      console.error(
+        "Supabase error:",
+        error.message
+      );
+      const sorted = [...(data || [])].sort(
+  (a, b) => {
+    const aNum =
+      a.number_of_treatments ?? 999;
+
+    const bNum =
+      b.number_of_treatments ?? 999;
+
+    return aNum - bNum;
+  }
+);
+
+setClaims(sorted);
+      return;
+    }
+
+    setClaims(data || []);
+  }
+
+  async function useOneSession(
+    claimId: string,
+    patientName: string
+  ) {
+    const ok = window.confirm(
+      `Use 1 session for ${patientName}?`
+    );
+
+    if (!ok) return;
+
+    const { error } = await supabase.rpc(
+      "use_one_session",
+      {
+        p_claim_uuid: claimId,
+      }
+    );
+
+    if (error) {
+      alert(error.message);
+      return;
+    }
+
+    await loadClaims();
+  }
+
+  function handleSort(column: string) {
+    if (sortColumn === column) {
+      setAscending(!ascending);
+    } else {
+      setSortColumn(column);
+      setAscending(true);
+    }
+  }
+
+  function sortLabel(column: string) {
+    if (sortColumn !== column) return "";
+    return ascending ? " ↑" : " ↓";
+  }
+
+  useEffect(() => {
+    loadClaims();
+
+    const channel = supabase
+      .channel(
+        "insurance-claims-realtime"
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "insurance_claims",
+        },
+        () => loadClaims()
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [
+    statusFilter,
+    notesFilter,
+    sortColumn,
+    ascending,
+  ]);
+
+  return (
+    <div className="dashboard">
+      <h1>Insurance Dashboard</h1>
+
+      <div className="filters">
+        <label>
+          Status:
+          <select
+            value={statusFilter}
+            onChange={(e) =>
+              setStatusFilter(
+                e.target.value
+              )
+            }
+          >
+            {statusOptions.map(
+              (status) => (
+                <option
+                  key={status}
+                  value={status}
+                >
+                  {status}
+                </option>
+              )
+            )}
+          </select>
+        </label>
+
+        <label>
+          Notes:
+          <select
+            value={notesFilter}
+            onChange={(e) =>
+              setNotesFilter(
+                e.target.value
+              )
+            }
+          >
+            {notesOptions.map(
+              (note) => (
+                <option
+                  key={note}
+                  value={note}
+                >
+                  {note}
+                </option>
+              )
+            )}
+          </select>
+        </label>
+      </div>
+
+      <div className="count">
+  Showing {claims.length} records
+</div>
+
+<div className="stats">
+  <div className="card critical">
+    🔴 Critical
+    <br />
+    {criticalCount}
+  </div>
+
+  <div className="card warning">
+    🟡 Warning
+    <br />
+    {warningCount}
+  </div>
+
+  <div className="card good">
+    🟢 Good
+    <br />
+    {goodCount}
+  </div>
+
+  <div className="card total">
+    📋 Total
+    <br />
+    {claims.length}
+  </div>
+</div>
+
+      <table>
+        <thead>
+          <tr>
+            <th
+              onClick={() =>
+                handleSort(
+                  "patient_name"
+                )
+              }
+            >
+              Patient
+              {sortLabel(
+                "patient_name"
+              )}
+            </th>
+
+            <th
+              onClick={() =>
+                handleSort(
+                  "session_referral"
+                )
+              }
+            >
+              Session Referral
+              {sortLabel(
+                "session_referral"
+              )}
+            </th>
+
+            <th
+              onClick={() =>
+                handleSort(
+                  "number_of_treatments"
+                )
+              }
+            >
+              Treatments
+              {sortLabel(
+                "number_of_treatments"
+              )}
+            </th>
+
+            <th
+              onClick={() =>
+                handleSort("status")
+              }
+            >
+              Status
+              {sortLabel("status")}
+            </th>
+
+            <th
+              onClick={() =>
+                handleSort("notes")
+              }
+            >
+              Notes
+              {sortLabel("notes")}
+            </th>
+
+            <th>Priority</th>
+<th>Need Action</th>
+<th>Action</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          {claims.map((claim) => (
+            <tr
+  key={claim.id}
+  className={
+    (claim.number_of_treatments ?? 0) <= 2
+      ? "row-critical"
+      : (claim.number_of_treatments ?? 0) <= 5
+      ? "row-warning"
+      : ""
+  }
+>
+  
+  <td>
+  {(claim.number_of_treatments ?? 0) === 0 ? (
+    <span className="renew-now">
+      🚨 RENEW NOW
+    </span>
+  ) : (claim.number_of_treatments ?? 0) <= 2 ? (
+    <span className="critical-text">
+      🔴 Critical
+    </span>
+  ) : (claim.number_of_treatments ?? 0) <= 5 ? (
+    <span className="warning-text">
+      🟡 Warning
+    </span>
+  ) : (
+    <span className="good-text">
+      🟢 Good
+    </span>
+  )}
+</td>
+<td>
+  {(claim.number_of_treatments ?? 0) === 0
+    ? "🚨 Renew Authorization"
+    : (claim.number_of_treatments ?? 0) <= 2
+    ? "📞 Call Patient"
+    : (claim.number_of_treatments ?? 0) <= 5
+    ? "⚠ Monitor"
+    : "✅ OK"}
+</td>
+              <td>
+                {claim.patient_name ||
+                  ""}
+              </td>
+
+              <td>
+                {claim.session_referral ||
+                  ""}
+              </td>
+
+              <td>
+                <span
+                  style={{
+                    color:
+                      claim.number_of_treatments <=
+                      2
+                        ? "red"
+                        : "black",
+                    fontWeight:
+                      claim.number_of_treatments <=
+                      2
+                        ? "bold"
+                        : "normal",
+                    fontSize:
+                      claim.number_of_treatments <=
+                      2
+                        ? "20px"
+                        : "16px",
+                  }}
+                >
+                  {claim.number_of_treatments ??
+                    ""}
+                </span>
+              </td>
+
+              <td>
+                {claim.status || ""}
+              </td>
+
+              <td>
+                {claim.notes || ""}
+              </td>
+
+              <td>
+                <button
+  className={
+    (claim.number_of_treatments ?? 0) === 0
+      ? "renew-button"
+      : ""
+  }
+  onClick={() => {
+    console.log("FULL CLAIM:", claim);
+    console.log("ID:", claim.id);
+    console.log("PATIENT:", claim.patient_name);
+
+    useOneSession(
+      claim.id,
+      claim.patient_name
+    );
+  }}
+>
+  Use 1 Session
+</button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+console.log(
+  import.meta.env.VITE_SUPABASE_URL
+);
