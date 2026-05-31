@@ -51,6 +51,26 @@ const notesOptions = [
 ];
 
 export default function App() {
+  const generateCard = async (claim: any) => {
+  const cardId = `PAT-${claim.claim_id}`;
+
+  const { error } = await supabase
+    .from("insurance_claims")
+    .update({
+      wallet_id: cardId,
+      qr_code: cardId,
+      wallet_created: true,
+    })
+    .eq("id", claim.id);
+
+  if (error) {
+    alert("Error creating card");
+    console.error(error);
+    return;
+  }
+
+  alert(`Card Created: ${cardId}`);
+};
   const [claims, setClaims] =
   useState<Claim[]>([]);
   const [statusFilter, setStatusFilter] =
@@ -135,7 +155,41 @@ setClaims(sorted);
     const ok = window.confirm(
       `Use 1 session for ${patientName}?`
     );
+const claim = claims.find((c) => c.id === claimId);
 
+if (!claim) {
+  alert("Claim not found");
+  return;
+}
+
+const remaining =
+  (claim as any).remaining_sessions ??
+  (claim as any).number_of_treatments ??
+  0;
+
+if (remaining <= 0) {
+  alert("No remaining sessions.");
+  return;
+}
+
+const lastVisit = (claim as any).last_visit;
+
+// if (lastVisit) {
+//   const last = new Date(lastVisit).getTime();
+//   const now = new Date().getTime();
+
+//   const hours =
+//     (now - last) / (1000 * 60 * 60);
+
+//   if (hours < 8) {
+//     alert(
+//       `Already checked in within ${hours.toFixed(
+//         1
+//       )} hours`
+//     );
+//     return;
+//   }
+// }
     if (!ok) return;
 
     const { error } = await supabase.rpc(
@@ -336,7 +390,7 @@ setClaims(sorted);
               Notes
               {sortLabel("notes")}
             </th>
-
+<th>Wallet</th>
             <th>Priority</th>
 <th>Need Action</th>
 <th>Action</th>
@@ -393,6 +447,14 @@ setClaims(sorted);
                 {claim.session_referral ||
                   ""}
               </td>
+
+              <td>
+  <button
+    onClick={() => generateCard(claim)}
+  >
+    Generate Card
+  </button>
+</td>
 
               <td>
                 <span

@@ -260,3 +260,8 @@ button:hover {
   background: red !important;
   color: white;
 }
+.checkedin-button {
+  background-color: green;
+  color: white;
+  cursor: not-allowed;
+}
