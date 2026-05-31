@@ -1,6 +1,14 @@
 import { useEffect, useState } from "react";
 import { createClient } from "@supabase/supabase-js";
 import "./App.css";
+type Claim = {
+  id: string;
+  patient_name?: string;
+  session_referral?: string;
+  number_of_treatments?: number;
+  status?: string;
+  notes?: string;
+};
 
 const supabaseUrl =
   import.meta.env.VITE_SUPABASE_URL;
@@ -43,7 +51,8 @@ const notesOptions = [
 ];
 
 export default function App() {
-  const [claims, setClaims] = useState<any[]>([]);
+  const [claims, setClaims] =
+  useState<Claim[]>([]);
   const [statusFilter, setStatusFilter] =
     useState("All");
 
@@ -56,17 +65,18 @@ export default function App() {
   const [ascending, setAscending] =
     useState(true);
 
-    const criticalCount = claims.filter(
-  (c) => (c.number_of_treatments ?? 0) <= 2
+   const criticalCount = claims.filter(
+  (c: any) => (c.number_of_treatments ?? 0) <= 2
 ).length;
 
-const warningCount = claims.filter((c) => {
+const warningCount = claims.filter(
+  (c: any) => {
   const n = c.number_of_treatments ?? 0;
   return n >= 3 && n <= 5;
 }).length;
 
 const goodCount = claims.filter(
-  (c) => (c.number_of_treatments ?? 0) > 5
+  (c: any) => (c.number_of_treatments ?? 0) > 5
 ).length;
 
   async function loadClaims() {
@@ -102,10 +112,10 @@ const goodCount = claims.filter(
       const sorted = [...(data || [])].sort(
   (a, b) => {
     const aNum =
-      a.number_of_treatments ?? 999;
+  (a as any).number_of_treatments ?? 999;
 
-    const bNum =
-      b.number_of_treatments ?? 999;
+const bNum =
+  (b as any).number_of_treatments ?? 999;
 
     return aNum - bNum;
   }
@@ -388,18 +398,15 @@ setClaims(sorted);
                 <span
                   style={{
                     color:
-                      claim.number_of_treatments <=
-                      2
+                      (claim.number_of_treatments ?? 0) <= 2
                         ? "red"
                         : "black",
                     fontWeight:
-                      claim.number_of_treatments <=
-                      2
+                      (claim.number_of_treatments ?? 0) <= 2
                         ? "bold"
                         : "normal",
                     fontSize:
-                      claim.number_of_treatments <=
-                      2
+                      (claim.number_of_treatments ?? 0) <= 2
                         ? "20px"
                         : "16px",
                   }}
@@ -430,9 +437,9 @@ setClaims(sorted);
     console.log("PATIENT:", claim.patient_name);
 
     useOneSession(
-      claim.id,
-      claim.patient_name
-    );
+  claim.id,
+  claim.patient_name ?? ""
+);
   }}
 >
   Use 1 Session
