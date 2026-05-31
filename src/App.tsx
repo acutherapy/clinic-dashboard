@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { createClient } from "@supabase/supabase-js";
 import "./App.css";
+import ScanPage from "./ScanPage";
 type Claim = {
   id: string;
   patient_name?: string;
@@ -78,6 +79,9 @@ export default function App() {
 
   alert(`Card Created: ${cardId}`);
 };
+
+  const [scanMode, setScanMode] =
+  useState(false);
   const [claims, setClaims] =
   useState<Claim[]>([]);
   const [statusFilter, setStatusFilter] =
@@ -225,10 +229,32 @@ if (remaining <= 0) {
     ascending,
   ]);
 
+if (scanMode) {
+  return (
+    <div>
+      <button
+        onClick={() =>
+          setScanMode(false)
+        }
+      >
+        Back to Dashboard
+      </button>
+
+      <ScanPage />
+    </div>
+  );
+}
+
   return (
     <div className="dashboard">
       <h1>Insurance Dashboard</h1>
-
+<button
+  onClick={() =>
+    setScanMode(true)
+  }
+>
+  📷 Scan QR
+</button>
       <div className="filters">
         <label>
           Status:
