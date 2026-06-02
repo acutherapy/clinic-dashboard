@@ -40,6 +40,7 @@ export default function ScanPage() {
 
     scanner.render(
       async (decodedText) => {
+        console.log("SCANNED QR:", decodedText);
         try {
           scanner.clear();
 
@@ -48,14 +49,14 @@ export default function ScanPage() {
           );
 
           const { data, error } =
-            await supabase
-              .from("insurance_claims")
-              .select("*")
-              .eq(
-                "wallet_id",
-                decodedText
-              )
-              .single();
+  await supabase
+    .from("insurance_claims")
+    .select("*")
+    .eq(
+      "claim_id",
+      decodedText
+    )
+    .single();
 
           if (error || !data) {
 

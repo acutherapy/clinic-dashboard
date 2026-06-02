@@ -491,28 +491,33 @@ if (scanMode) {
       </td>
 
       {/* Wallet */}
-      <td>
-        {claim.wallet_id ? (
-          <div>
-            <div>
-              {claim.wallet_id}
-            </div>
-
-            <QRCodeSVG
-              value={claim.wallet_id}
-              size={70}
-            />
-          </div>
-        ) : (
-          <button
-            onClick={() =>
-              generateCard(claim)
-            }
-          >
-            Generate Card
-          </button>
-        )}
-      </td>
+   <td>
+  {claim.wallet_created ? (
+    <button
+      className="wallet-created"
+      onClick={() =>
+        window.open(
+          `http://localhost:3001/wallet/${claim.claim_id}`,
+          "_blank"
+        )
+      }
+    >
+      ✅ Created
+    </button>
+  ) : (
+    <button
+      className="wallet-button"
+      onClick={() =>
+        window.open(
+          `http://localhost:3001/wallet/${claim.claim_id}`,
+          "_blank"
+        )
+      }
+    >
+      📱 Wallet
+    </button>
+  )}
+</td>
 
       {/* Notes */}
       <td>

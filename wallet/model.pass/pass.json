@@ -1,0 +1,26 @@
+{
+  "formatVersion": 1,
+  "passTypeIdentifier": "pass.com.acutherapy.patientcard",
+  "teamIdentifier": "MG4XZUV99U",
+
+  "organizationName": "AcuTherapy Clinics",
+  "description": "Treatment Membership Card",
+
+  "serialNumber": "TEMP",
+
+  "logoText": "AcuTherapy Clinics",
+
+  "foregroundColor": "rgb(255,255,255)",
+  "backgroundColor": "rgb(2,6,111)",
+  "labelColor": "rgb(249,235,146)",
+
+  "suppressStripShine": true,
+
+  "generic": {
+    "headerFields": [],
+    "primaryFields": [],
+    "secondaryFields": [],
+    "auxiliaryFields": [],
+    "backFields": []
+  }
+}
