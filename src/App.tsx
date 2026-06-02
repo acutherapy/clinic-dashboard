@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { QRCodeSVG } from "qrcode.react";
+// import { QRCodeSVG } from "qrcode.react";
 import { createClient } from "@supabase/supabase-js";
 import "./App.css";
 import ScanPage from "./ScanPage";
@@ -59,7 +59,8 @@ const notesOptions = [
 ];
 
 export default function App() {
-  const generateCard = async (claim: any) => {
+  /*
+  const _generateCard = async (claim: any) => {
   const cardId = `PAT-${claim.claim_id}`;
 
   const { error } = await supabase
@@ -79,7 +80,7 @@ export default function App() {
 
   alert(`Card Created: ${cardId}`);
 };
-
+*/
   const [scanMode, setScanMode] =
   useState(false);
   const [claims, setClaims] =
