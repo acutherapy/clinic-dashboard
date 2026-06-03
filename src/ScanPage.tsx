@@ -139,36 +139,18 @@ setTimeout(() => {
   }, []);
 
   return (
-    <div
-      style={{
-        padding: "20px",
-      }}
-    >
-      <h1
-  style={{
-    textAlign: "center",
-    fontSize: "36px",
-  }}
->
-  AcuTherapy Clinic
-  <br />
-  Patient Check-In
-</h1>
+  <div className="scan-page">
+    <h1 className="scan-title">
+      AcuTherapy Clinic
+      <br />
+      Patient Check-In
+    </h1>
 
-      <div id="reader" className="scan-page"></div>
+    <div id="reader"></div>
 
-      <pre
-  style={{
-    fontSize: "24px",
-    fontWeight: "bold",
-    color: "green",
-    whiteSpace: "pre-wrap",
-    textAlign: "center",
-    marginTop: "30px",
-  }}
->
-  {message}
-</pre>
-    </div>
-  );
+    <pre className="scan-message">
+      {message}
+    </pre>
+  </div>
+);
 }

@@ -323,3 +323,27 @@ button:hover {
 .scan-result-date {
   margin-top: 32px;
 }
+.scan-page {
+  min-height: 100vh;
+  padding: 40px 20px;
+  text-align: center;
+  box-sizing: border-box;
+}
+
+.scan-title {
+  font-size: 44px;
+  font-weight: 800;
+  line-height: 1.45;
+  margin-top: 70px;
+  margin-bottom: 80px;
+}
+
+.scan-message {
+  font-size: 30px;
+  font-weight: 800;
+  color: green;
+  white-space: pre-wrap;
+  text-align: center;
+  line-height: 1.6;
+  margin-top: 50px;
+}
