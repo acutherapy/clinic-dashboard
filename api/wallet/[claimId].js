@@ -5,6 +5,11 @@ import fs from "fs";
 export default async function handler(req, res) {
   const { claimId } = req.query;
 
+  return res.status(200).send(
+    `Wallet API works: ${claimId}`
+  );
+}
+
   if (!claimId) {
     return res.status(400).send("Missing claimId");
   }
@@ -15,16 +20,10 @@ export default async function handler(req, res) {
     `PAT-${claimId}.pkpass`
   );
 
-  // Vercel read-only filesystem
-// 不删除旧文件
-
-console.log(
-  "Generating wallet:",
-  claimId
-);
-
   exec(
-    `cd wallet && node generate.cjs ${claimId}`,
+    return res.status(200).send(
+  `Wallet API works: ${claimId}`
+);
     (error, stdout, stderr) => {
       if (error) {
         console.error("Wallet generation error:", error);
