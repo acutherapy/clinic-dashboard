@@ -14,6 +14,7 @@ type Claim = {
   qr_code?: string;
   wallet_created?: boolean;
   last_scan?: string;
+  end_date?: string;
 
   claim_id?: number | string;
 };
@@ -378,9 +379,9 @@ if (scanMode) {
       {sortLabel("patient_name")}
     </th>
 
-    <th onClick={() => handleSort("session_referral")}>
-      Session Referral
-      {sortLabel("session_referral")}
+    <th onClick={() => handleSort("end_date")}>
+      Expiration Date
+      {sortLabel("Expiration Date")}
     </th>
 
     <th
@@ -431,8 +432,8 @@ if (scanMode) {
 
       {/* Session Referral */}
       <td>
-        {claim.session_referral || ""}
-      </td>
+  {claim.end_date || ""}
+</td>
 
       {/* Treatments */}
       <td>
