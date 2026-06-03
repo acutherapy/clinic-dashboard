@@ -88,17 +88,15 @@ export default function ScanPage() {
   return;
 }
 
-const today = new Date();
-today.setHours(0, 0, 0, 0);
+const todayString =
+  new Date().toISOString().slice(0, 10);
+if (
+  data.end_date &&
+  data.end_date < todayString
+) {
+  errorSound.play();
 
-if (data.end_date) {
-  const endDate = new Date(data.end_date);
-  endDate.setHours(0, 0, 0, 0);
-
-  if (endDate < today) {
-    errorSound.play();
-
-    setMessage(`
+  setMessage(`
 ❌ AUTHORIZATION EXPIRED
 
 ${data.patient_name}
@@ -109,19 +107,17 @@ ${data.end_date}
 Please renew before treatment.
 `);
 
-    setTimeout(() => {
-      window.location.reload();
-    }, 15000);
+  setTimeout(() => {
+    window.location.reload();
+  }, 15000);
 
-    return;
-  }
+  return;
 }
 
-       const remaining =
-  Math.max(
-    0,
-    (data.number_of_treatments ?? 1) - 1
-  );
+const remaining = Math.max(
+  0,
+  (data.number_of_treatments ?? 1) - 1
+);
 
 const now = new Date();
 
