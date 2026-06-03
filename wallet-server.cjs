@@ -16,12 +16,12 @@ app.get("/wallet/:claimId", (req, res) => {
 
   // 已存在则直接下载
   if (fs.existsSync(passFile)) {
-    console.log(
-      `Wallet already exists: PAT-${claimId}`
-    );
+  console.log(
+    `Deleting old wallet: PAT-${claimId}`
+  );
 
-    return res.download(passFile);
-  }
+  fs.unlinkSync(passFile);
+}
 
   // 不存在才生成
   exec(

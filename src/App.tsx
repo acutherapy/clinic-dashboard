@@ -497,7 +497,7 @@ if (scanMode) {
       className="wallet-created"
       onClick={() =>
         window.open(
-          `http://localhost:3001/wallet/${claim.claim_id}`,
+          `/api/wallet/${claim.claim_id}`,
           "_blank"
         )
       }
@@ -509,7 +509,7 @@ if (scanMode) {
       className="wallet-button"
       onClick={() =>
         window.open(
-          `http://localhost:3001/wallet/${claim.claim_id}`,
+          `/api/wallet/${claim.claim_id}`,
           "_blank"
         )
       }
