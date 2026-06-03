@@ -462,28 +462,13 @@ if (scanMode) {
 
       {/* Priority */}
       <td>
-        {(claim.number_of_treatments ??
-          0) === 0 ? (
-          <span className="renew-now">
-            🚨 RENEW NOW
-          </span>
-        ) : (claim.number_of_treatments ??
-            0) <=
-          2 ? (
-          <span className="critical-text">
-            🔴 Critical
-          </span>
-        ) : (claim.number_of_treatments ??
-            0) <=
-          5 ? (
-          <span className="warning-text">
-            🟡 Warning
-          </span>
-        ) : (
-          <span className="good-text">
-            🟢 Good
-          </span>
-        )}
+        {getClaimLevel(claim) === "critical" ? (
+  <span className="critical-text">🔴 Critical</span>
+) : getClaimLevel(claim) === "warning" ? (
+  <span className="warning-text">🟡 Warning</span>
+) : (
+  <span className="good-text">🟢 Good</span>
+)}
       </td>
 
       {/* Need Action */}
