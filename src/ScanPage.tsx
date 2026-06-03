@@ -148,9 +148,9 @@ setTimeout(() => {
 
     <div id="reader"></div>
 
-    <pre className="scan-message">
-      {message}
-    </pre>
+  <pre className="scan-message">
+  {message}
+</pre>
   </div>
 );
 }

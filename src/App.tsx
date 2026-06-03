@@ -86,7 +86,7 @@ export default function App() {
   const [claims, setClaims] =
   useState<Claim[]>([]);
   const [statusFilter, setStatusFilter] =
-    useState("All");
+    useState("active");
 
   const [notesFilter, setNotesFilter] =
     useState("All");
@@ -117,11 +117,10 @@ const goodCount = claims.filter(
       .select("*");
 
     if (statusFilter !== "All") {
-      query = query.eq(
-        "status",
-        statusFilter
-      );
-    }
+  query = query.or(
+    `status.eq.${statusFilter},session_referral.eq.rfs_acu,session_referral.eq.rfs_mass`
+  );
+}
 
     if (notesFilter !== "All") {
       query = query.eq(
