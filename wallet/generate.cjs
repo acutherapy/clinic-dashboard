@@ -40,8 +40,7 @@ const supabase = createClient(
 
     // 以后改成数据库里的授权截止日期
     const expirationDate =
-      claim.authorization_expiration ||
-      "06/30/2026";
+  claim.end_date || "N/A";
 
     const pass = await PKPass.from(
       {
@@ -64,118 +63,56 @@ const supabase = createClient(
     );
 
     // TOP WARNING
-
 if (remainingVisits <= 2) {
   pass.headerFields.push({
     key: "warning",
     label: "",
-    value: "⚠ RENEW SOON"
+    value: "⚠ RENEW SOON",
   });
 }
-
-pass.primaryFields = [
-  {
-    key: "remaining",
-    label: "VISITS REMAINING",
-    value: remainingVisits
-  }
-];
-
-pass.secondaryFields = [
-  {
-    key: "patient",
-    label: "CLIENT",
-    value: patientName
-  }
-];
-
-pass.auxiliaryFields = [
-  {
-    key: "expire",
-    label: "EXPIRES",
-    value: expirationDate
-  },
-  {
-    key: "phone",
-    label: "PHONE",
-    value: "808-528-7177"
-  }
-];
-// TOP WARNING
-
-if (remainingVisits <= 2) {
-  pass.headerFields.push({
-    key: "warning",
-    label: "",
-    value: "⚠ RENEW SOON"
-  });
-}
-
-// BIG NUMBER
 
 pass.primaryFields.push({
-  key: "remaining",
-  label: "VISITS REMAINING",
-  value: String(remainingVisits)
+  key: "end_date",
+  label: "EXPIRATION DATE",
+  value: expirationDate,
 });
-
-// PATIENT NAME
 
 pass.secondaryFields.push({
   key: "patient",
-  label: "CLIENT",
-  value: patientName
+  label: `CLIENT ${cardId}`,
+  value: claim.patient_name || "Client",
 });
-
-// EXPIRE DATE
-
-pass.auxiliaryFields.push({
-  key: "expire",
-  label: "EXPIRES",
-  value: expirationDate
-});
-
-// PHONE
 
 pass.auxiliaryFields.push({
   key: "phone",
   label: "PHONE",
-  value: "808-528-7177"
+  value: "808-528-7177",
 });
-    // ==========================
-    // QR CODE
-    // ==========================
-
-    pass.setBarcodes({
-  message: String(claim.claim_id),
+  pass.setBarcodes({
+  message: cardId,
   format: "PKBarcodeFormatQR",
 });
 
-    fs.writeFileSync(
-      `${cardId}.pkpass`,
-      pass.getAsBuffer()
-    );
-
-const { error: updateError } =
-  await supabase
-    .from("insurance_claims")
-    .update({
-      wallet_created: true,
-      wallet_created_at: new Date()
-    })
-    .eq("claim_id", claimId);
-
-console.log(
-  "UPDATE RESULT:",
-  updateError
+fs.writeFileSync(
+  `${cardId}.pkpass`,
+  pass.getAsBuffer()
 );
 
+const { error: updateError } = await supabase
+  .from("insurance_claims")
+  .update({
+    wallet_id: cardId,
+    qr_code: cardId,
+    wallet_created: true,
+    wallet_created_at: new Date().toISOString(),
+  })
+  .eq("claim_id", claimId);
+
+console.log("UPDATE RESULT:", updateError);
 console.log(`Created ${cardId}.pkpass`);
-    
-    console.log(`Patient: ${patientName}`);
-    console.log(
-      `Remaining Visits: ${remainingVisits}`
-    );
+console.log(`Patient: ${patientName}`);
+console.log(`Expiration Date: ${expirationDate}`);
+
   } catch (err) {
     console.error(err);
   }

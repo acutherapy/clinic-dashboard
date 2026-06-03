@@ -288,3 +288,38 @@ button:hover {
   font-weight: 600;
   min-width: 90px;
 }
+.scan-page {
+  min-height: 100vh;
+  padding: 32px 20px;
+  text-align: center;
+  box-sizing: border-box;
+}
+
+.scan-title {
+  font-size: 44px;
+  font-weight: 800;
+  line-height: 1.25;
+  margin-top: 70px;
+  margin-bottom: 70px;
+  letter-spacing: -1px;
+}
+
+.scan-result {
+  font-size: 34px;
+  line-height: 1.6;
+  font-weight: 800;
+  color: green;
+}
+
+.scan-result-name {
+  margin-top: 28px;
+  font-size: 34px;
+}
+
+.scan-result-visits {
+  margin-top: 28px;
+}
+
+.scan-result-date {
+  margin-top: 32px;
+}

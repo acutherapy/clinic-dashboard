@@ -116,7 +116,7 @@ ${timestamp}
 
 setTimeout(() => {
   window.location.reload();
-}, 3000);
+}, 15000);
 
         } catch (err) {
 
@@ -155,7 +155,7 @@ setTimeout(() => {
   Patient Check-In
 </h1>
 
-      <div id={`reader`}></div>
+      <div id="reader" className="scan-page"></div>
 
       <pre
   style={{
