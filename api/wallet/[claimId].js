@@ -15,9 +15,13 @@ export default async function handler(req, res) {
     `PAT-${claimId}.pkpass`
   );
 
-  if (fs.existsSync(passFile)) {
-    fs.unlinkSync(passFile);
-  }
+  // Vercel read-only filesystem
+// 不删除旧文件
+
+console.log(
+  "Generating wallet:",
+  claimId
+);
 
   exec(
     `cd wallet && node generate.cjs ${claimId}`,
