@@ -88,6 +88,35 @@ export default function ScanPage() {
   return;
 }
 
+const today = new Date();
+today.setHours(0, 0, 0, 0);
+
+if (data.end_date) {
+  const endDate = new Date(data.end_date);
+  endDate.setHours(0, 0, 0, 0);
+
+  if (endDate < today) {
+    errorSound.play();
+
+    setMessage(`
+❌ AUTHORIZATION EXPIRED
+
+${data.patient_name}
+
+Expiration Date:
+${data.end_date}
+
+Please renew before treatment.
+`);
+
+    setTimeout(() => {
+      window.location.reload();
+    }, 15000);
+
+    return;
+  }
+}
+
        const remaining =
   Math.max(
     0,
