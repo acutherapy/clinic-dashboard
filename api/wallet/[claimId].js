@@ -1,8 +1,8 @@
-const { exec } = require("child_process");
-const path = require("path");
-const fs = require("fs");
+import { exec } from "child_process";
+import path from "path";
+import fs from "fs";
 
-module.exports = async (req, res) => {
+export default async function handler(req, res) {
   const { claimId } = req.query;
 
   if (!claimId) {
@@ -23,12 +23,20 @@ module.exports = async (req, res) => {
     `cd wallet && node generate.cjs ${claimId}`,
     (error, stdout, stderr) => {
       if (error) {
-        console.error(error);
-        return res.status(500).send(stderr || error.message);
+        console.error("Wallet generation error:", error);
+        console.error("STDERR:", stderr);
+        return res
+          .status(500)
+          .send(stderr || error.message);
       }
 
       if (!fs.existsSync(passFile)) {
-        return res.status(404).send("Pass file not found");
+        console.error("Pass file not found:", passFile);
+        console.log("STDOUT:", stdout);
+        console.error("STDERR:", stderr);
+        return res
+          .status(404)
+          .send("Pass file not found");
       }
 
       res.setHeader(
@@ -44,4 +52,4 @@ module.exports = async (req, res) => {
       fs.createReadStream(passFile).pipe(res);
     }
   );
-};
+}
