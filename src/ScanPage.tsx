@@ -53,7 +53,7 @@ export default function ScanPage() {
     .from("insurance_claims")
     .select("*")
     .eq(
-      "claim_id",
+      "wallet_id",
       decodedText
     )
     .single();
