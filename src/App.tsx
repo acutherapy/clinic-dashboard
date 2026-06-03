@@ -98,19 +98,56 @@ export default function App() {
     useState(true);
 
    const criticalCount = claims.filter(
-  (c: any) => (c.number_of_treatments ?? 0) <= 2
+  (c: any) => getClaimLevel(c) === "critical"
 ).length;
 
 const warningCount = claims.filter(
-  (c: any) => {
-  const n = c.number_of_treatments ?? 0;
-  return n >= 3 && n <= 5;
-}).length;
-
-const goodCount = claims.filter(
-  (c: any) => (c.number_of_treatments ?? 0) > 5
+  (c: any) => getClaimLevel(c) === "warning"
 ).length;
 
+const goodCount = claims.filter(
+  (c: any) => getClaimLevel(c) === "good"
+).length;
+
+function getClaimLevel(claim: any) {
+  const sessionsLeft =
+    claim.number_of_treatments ?? 0;
+
+  if (!claim.end_date) return "warning";
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const endDate = new Date(claim.end_date);
+  endDate.setHours(0, 0, 0, 0);
+
+  const daysLeft = Math.ceil(
+    (endDate.getTime() - today.getTime()) /
+      (1000 * 60 * 60 * 24)
+  );
+
+  const sessionsPerWeekNeeded =
+    daysLeft > 0
+      ? (sessionsLeft / daysLeft) * 7
+      : 999;
+
+  if (
+    daysLeft < 0 ||
+    daysLeft <= 7 ||
+    sessionsPerWeekNeeded >= 3
+  ) {
+    return "critical";
+  }
+
+  if (
+    daysLeft <= 14 ||
+    sessionsPerWeekNeeded >= 2
+  ) {
+    return "warning";
+  }
+
+  return "good";
+}
   async function loadClaims() {
     let query = supabase
       .from("insurance_claims")
@@ -382,12 +419,12 @@ if (scanMode) {
     <tr
       key={claim.id}
       className={
-        (claim.number_of_treatments ?? 0) <= 2
-          ? "row-critical"
-          : (claim.number_of_treatments ?? 0) <= 5
-          ? "row-warning"
-          : ""
-      }
+  getClaimLevel(claim) === "critical"
+    ? "row-critical"
+    : getClaimLevel(claim) === "warning"
+    ? "row-warning"
+    : ""
+}
     >
       {/* Patient */}
       <td>{claim.patient_name || ""}</td>
