@@ -89,7 +89,9 @@ export default function App() {
 };
 */
   const [scanMode, setScanMode] =
-  useState(false);
+  useState(
+    window.location.search.includes("scan=true")
+  );
   const [claims, setClaims] =
   useState<Claim[]>([]);
   const [statusFilter, setStatusFilter] =
@@ -273,7 +275,7 @@ if (remaining <= 0) {
     ascending,
   ]);
 
-if (false && scanMode) {
+if (scanMode) {
   return (
     <div>
       <button
