@@ -3,6 +3,12 @@ import { useEffect, useState } from "react";
 import { createClient } from "@supabase/supabase-js";
 import "./App.css";
 import ScanPage from "./ScanPage";
+
+import {
+  Routes,
+  Route
+} from "react-router-dom";
+
 type Claim = {
   id: string;
   patient_name?: string;
@@ -267,7 +273,7 @@ if (remaining <= 0) {
     ascending,
   ]);
 
-if (scanMode) {
+if (false && scanMode) {
   return (
     <div>
       <button
@@ -283,7 +289,7 @@ if (scanMode) {
   );
 }
 
-  return (
+  const dashboardView = (
     <div className="dashboard">
       <h1>Insurance Dashboard</h1>
 <button
@@ -550,8 +556,22 @@ if (scanMode) {
   ))}
 </tbody>
       </table>
-    </div>
-  );
+        </div>
+);
+
+return (
+  <Routes>
+    <Route
+      path="/"
+      element={dashboardView}
+    />
+
+    <Route
+      path="/scan"
+      element={<ScanPage />}
+    />
+  </Routes>
+);
 }
 console.log(
   import.meta.env.VITE_SUPABASE_URL
