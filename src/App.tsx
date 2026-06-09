@@ -40,19 +40,13 @@ const statusOptions = [
   "All",
   "Open",
   "Closed",
-  "open",
-  "closed",
   "active",
   "pending",
-  "approved",
-  "denied",
-  "expired",
-  "completed",
   "cancelled",
-  "following_up",
-  "rfs_acu",
-  "rfs_mass",
-  "dislike",
+  "Awaiting Review",
+  "B6",
+  "RFS",
+  "Waiting for Schedule",
 ];
 
 const notesOptions = [
