@@ -38,16 +38,6 @@ const statusOptions = [
   "Waiting for Schedule",
 ];
 
-const notesOptions = [
-  "All",
-  "call",
-  "text",
-  "schedule",
-  "need auth",
-  "no answer",
-  "done",
-];
-
 export default function App() {
   const navigate = useNavigate();
   const [claims, setClaims] = useState<Claim[]>([]);
@@ -55,6 +45,27 @@ export default function App() {
   const [notesFilter, setNotesFilter] = useState("All");
   const [sortColumn, setSortColumn] = useState("number_of_treatments");
   const [ascending, setAscending] = useState(true);
+  const [notesOptions, setNotesOptions] = useState<string[]>(["All"]);
+
+  async function loadNotesOptions() {
+    const { data, error } = await supabase
+      .from("insurance_claims")
+      .select("notes");
+
+    if (error) {
+      console.error("Error loading notes options:", error.message);
+      return;
+    }
+
+    if (data) {
+      const unique = Array.from(
+        new Set(data.map((d: any) => d.notes).filter(Boolean))
+      ) as string[];
+      unique.sort((a, b) => a.localeCompare(b));
+      setNotesOptions(["All", ...unique]);
+    }
+  }
+
 
   const criticalCount = claims.filter(
     (c: any) => getClaimLevel(c) === "critical"
@@ -185,6 +196,10 @@ export default function App() {
   }
 
   useEffect(() => {
+    loadNotesOptions();
+  }, []);
+
+  useEffect(() => {
     loadClaims();
 
     const channel = supabase
@@ -196,7 +211,10 @@ export default function App() {
           schema: "public",
           table: "insurance_claims",
         },
-        () => loadClaims()
+        () => {
+          loadClaims();
+          loadNotesOptions();
+        }
       )
       .subscribe();
 
