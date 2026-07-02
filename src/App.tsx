@@ -69,9 +69,20 @@ export default function App() {
   ).length;
 
   function getClaimLevel(claim: any) {
+    const status = (claim.status || "").toLowerCase();
+    if (status === "closed" || status === "cancelled") {
+      return "good";
+    }
+
     const sessionsLeft = claim.remaining_sessions ?? claim.number_of_treatments ?? 0;
 
-    if (!claim.end_date) return "warning";
+    if (sessionsLeft <= 0) {
+      return "critical";
+    }
+
+    if (!claim.end_date) {
+      return sessionsLeft <= 2 ? "critical" : "warning";
+    }
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -83,19 +94,24 @@ export default function App() {
       (endDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
     );
 
-    const sessionsPerWeekNeeded =
-      daysLeft > 0 ? (sessionsLeft / daysLeft) * 7 : 999;
-
-    if (daysLeft < 0 || daysLeft <= 7 || sessionsPerWeekNeeded >= 3) {
+    if (daysLeft < 0) {
       return "critical";
     }
 
-    if (daysLeft <= 14 || sessionsPerWeekNeeded >= 2) {
+    const sessionsPerWeekNeeded =
+      daysLeft > 0 ? (sessionsLeft / daysLeft) * 7 : 999;
+
+    if (daysLeft <= 7 || sessionsPerWeekNeeded >= 3) {
+      return "critical";
+    }
+
+    if (daysLeft <= 14 || sessionsLeft <= 2 || sessionsPerWeekNeeded >= 2) {
       return "warning";
     }
 
     return "good";
   }
+
 
   async function loadClaims() {
     let query = supabase.from("insurance_claims").select("*");
