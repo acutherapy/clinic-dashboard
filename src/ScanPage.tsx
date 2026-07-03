@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { Html5QrcodeScanner } from "html5-qrcode";
+import { useEffect, useState, useRef } from "react";
+import { Html5Qrcode } from "html5-qrcode";
 import { createClient } from "@supabase/supabase-js";
 import { useNavigate } from "react-router-dom";
 
@@ -15,121 +15,172 @@ const errorSound = new Audio("/error.mp3");
 export default function ScanPage() {
   const navigate = useNavigate();
   const [scanActive, setScanActive] = useState(true);
+  const scanActiveRef = useRef(scanActive);
   const [result, setResult] = useState<{
     type: "success" | "error";
     title: string;
     message: string;
   } | null>(null);
 
-  const [statusMessage, setStatusMessage] = useState("Ready to scan...");
+  const [statusMessage, setStatusMessage] = useState("Initializing camera...");
+
+  // Sync ref with state to prevent stale closures
+  useEffect(() => {
+    scanActiveRef.current = scanActive;
+  }, [scanActive]);
 
   useEffect(() => {
-    if (!scanActive) return;
+    let html5QrCode: Html5Qrcode | null = null;
+    let isMounted = true;
 
-    const scanner = new Html5QrcodeScanner(
-      "reader",
-      {
-        fps: 10,
-        qrbox: 220,
-      },
-      false
-    );
-
-    const onScanSuccess = async (decodedText: string) => {
-      console.log("SCANNED QR:", decodedText);
-      
-      // Stop scanner immediately to prevent duplicate reads
-      setScanActive(false);
-      setStatusMessage("Verifying credentials...");
-
+    const initScanner = async () => {
       try {
-        const { data, error } = await supabase
-          .from("insurance_claims")
-          .select("*")
-          .eq("wallet_id", decodedText)
-          .single();
+        // Small delay to ensure the DOM element is fully rendered
+        await new Promise((resolve) => setTimeout(resolve, 100));
+        if (!isMounted) return;
 
-        if (error || !data) {
-          errorSound.play().catch(e => console.log("Audio play blocked:", e));
-          setResult({
-            type: "error",
-            title: "Patient Not Found",
-            message: `No active authorization found for Card ID: ${decodedText}.\n\nPlease register or consult the front desk.`
-          });
+        const element = document.getElementById("reader");
+        if (!element) {
+          console.warn("Reader element not found in DOM");
           return;
         }
 
-        const todayString = new Date().toISOString().slice(0, 10);
-        if (data.end_date && data.end_date < todayString) {
-          errorSound.play().catch(e => console.log("Audio play blocked:", e));
-          setResult({
-            type: "error",
-            title: "Authorization Expired",
-            message: `Patient: ${data.patient_name}\n\nExpiration Date: ${data.end_date}\n\nThis card's authorization period has ended. Please renew authorization before proceeding.`
-          });
-          return;
+        html5QrCode = new Html5Qrcode("reader");
+
+        // Detect available cameras and prefer the back-facing one ("environment")
+        let cameraConfig: any = { facingMode: "environment" };
+
+        try {
+          const devices = await Html5Qrcode.getCameras();
+          if (devices && devices.length > 0) {
+            const backCamera = devices.find((device) =>
+              device.label.toLowerCase().includes("back") ||
+              device.label.toLowerCase().includes("environment")
+            );
+            cameraConfig = backCamera ? backCamera.id : devices[0].id;
+          }
+        } catch (e) {
+          console.warn("Could not query cameras, falling back to facingMode: environment", e);
         }
 
-        const remainingTreatments = data.remaining_sessions ?? data.number_of_treatments ?? 0;
-        if (remainingTreatments <= 0) {
-          errorSound.play().catch(e => console.log("Audio play blocked:", e));
-          setResult({
-            type: "error",
-            title: "No Treatments Remaining",
-            message: `Patient: ${data.patient_name}\n\nAll authorized sessions for this claim have been utilized.`
-          });
-          return;
+        if (!isMounted) return;
+
+        await html5QrCode.start(
+          cameraConfig,
+          {
+            fps: 10,
+            qrbox: 220,
+          },
+          async (decodedText) => {
+            // Only process scan if scanning is currently active
+            if (!scanActiveRef.current) return;
+
+            console.log("SCANNED QR:", decodedText);
+            setScanActive(false);
+            setStatusMessage("Verifying credentials...");
+
+            try {
+              const { data, error } = await supabase
+                .from("insurance_claims")
+                .select("*")
+                .eq("wallet_id", decodedText)
+                .single();
+
+              if (error || !data) {
+                errorSound.play().catch((e) => console.log("Audio play blocked:", e));
+                setResult({
+                  type: "error",
+                  title: "Patient Not Found",
+                  message: `No active authorization found for Card ID: ${decodedText}.\n\nPlease register or consult the front desk.`,
+                });
+                return;
+              }
+
+              const todayString = new Date().toISOString().slice(0, 10);
+              if (data.end_date && data.end_date < todayString) {
+                errorSound.play().catch((e) => console.log("Audio play blocked:", e));
+                setResult({
+                  type: "error",
+                  title: "Authorization Expired",
+                  message: `Patient: ${data.patient_name}\n\nExpiration Date: ${data.end_date}\n\nThis card's authorization period has ended. Please renew authorization before proceeding.`,
+                });
+                return;
+              }
+
+              const remainingTreatments = data.remaining_sessions ?? data.number_of_treatments ?? 0;
+              if (remainingTreatments <= 0) {
+                errorSound.play().catch((e) => console.log("Audio play blocked:", e));
+                setResult({
+                  type: "error",
+                  title: "No Treatments Remaining",
+                  message: `Patient: ${data.patient_name}\n\nAll authorized sessions for this claim have been utilized.`,
+                });
+                return;
+              }
+
+              // Decrement session count in the database
+              const { error: rpcError } = await supabase.rpc("use_one_session", {
+                p_claim_uuid: data.id,
+              });
+
+              if (rpcError) {
+                errorSound.play().catch((e) => console.log("Audio play blocked:", e));
+                setResult({
+                  type: "error",
+                  title: "Check-in Error",
+                  message: rpcError.message || "Failed to update session balance.",
+                });
+                return;
+              }
+
+              const nextRemaining = Math.max(0, remainingTreatments - 1);
+              const timestamp = new Date().toLocaleDateString() + " " + new Date().toLocaleTimeString();
+
+              successSound.play().catch((e) => console.log("Audio play blocked:", e));
+              setResult({
+                type: "success",
+                title: "Check-in Successful",
+                message: `Patient: ${data.patient_name}\nRemaining Sessions: ${nextRemaining}\n\nTimestamp: ${timestamp}`,
+              });
+            } catch (err: any) {
+              console.error("Scan error:", err);
+              errorSound.play().catch((e) => console.log("Audio play blocked:", e));
+              setResult({
+                type: "error",
+                title: "System Error",
+                message: err.message || "An unexpected error occurred during check-in.",
+              });
+            }
+          },
+          () => {
+            // Suppress verbose console log scanner outputs
+          }
+        );
+
+        if (isMounted) {
+          setStatusMessage("Position your Wallet QR code inside the camera view");
         }
-
-        // Decrement session count in the database
-        const { error: rpcError } = await supabase.rpc("use_one_session", {
-          p_claim_uuid: data.id,
-        });
-
-        if (rpcError) {
-          errorSound.play().catch(e => console.log("Audio play blocked:", e));
-          setResult({
-            type: "error",
-            title: "Check-in Error",
-            message: rpcError.message || "Failed to update session balance."
-          });
-          return;
-        }
-
-        const nextRemaining = Math.max(0, remainingTreatments - 1);
-        const timestamp = new Date().toLocaleDateString() + " " + new Date().toLocaleTimeString();
-
-        successSound.play().catch(e => console.log("Audio play blocked:", e));
-        setResult({
-          type: "success",
-          title: "Check-in Successful",
-          message: `Patient: ${data.patient_name}\nRemaining Sessions: ${nextRemaining}\n\nTimestamp: ${timestamp}`
-        });
-
       } catch (err: any) {
-        console.error("Scan error:", err);
-        errorSound.play().catch(e => console.log("Audio play blocked:", e));
-        setResult({
-          type: "error",
-          title: "System Error",
-          message: err.message || "An unexpected error occurred during check-in."
-        });
+        console.error("Scanner init error:", err);
+        if (isMounted) {
+          setStatusMessage("Failed to start camera. Please verify permissions.");
+        }
       }
     };
 
-    const onScanFailure = () => {
-      // Suppress spammy log outputs from camera scans
-    };
-
-    scanner.render(onScanSuccess, onScanFailure);
-    setStatusMessage("Position your Wallet QR code inside the camera view");
+    initScanner();
 
     return () => {
-      scanner.clear().catch((err) => {
-        console.warn("Failed to clear html5-qrcode instance on unmount:", err);
-      });
+      isMounted = false;
+      if (html5QrCode) {
+        if (html5QrCode.isScanning) {
+          html5QrCode.stop().catch((err) => {
+            console.warn("Failed to stop scanner on unmount:", err);
+          });
+        }
+      }
     };
-  }, [scanActive]);
+  }, []); // Empty dependency array ensures we initialize only once on mount
 
   // Handle automatic timeout close for check-in modals
   useEffect(() => {

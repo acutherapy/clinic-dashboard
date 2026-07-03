@@ -195,6 +195,46 @@ export default function App() {
     await loadClaims();
   }
 
+  async function handleUpdateStatus(claimId: string, newStatus: string) {
+    // Optimistically update local state
+    setClaims((prev) =>
+      prev.map((c) => (c.id === claimId ? { ...c, status: newStatus } : c))
+    );
+
+    const { error } = await supabase
+      .from("insurance_claims")
+      .update({ status: newStatus })
+      .eq("id", claimId);
+
+    if (error) {
+      alert("Failed to update status: " + error.message);
+      // Revert to database state on failure
+      loadClaims();
+    }
+  }
+
+  async function handleUpdateNote(claimId: string, newValue: string, oldValue: string) {
+    if (newValue === oldValue) return;
+
+    // Optimistically update local state
+    setClaims((prev) =>
+      prev.map((c) => (c.id === claimId ? { ...c, notes: newValue || undefined } : c))
+    );
+
+    const { error } = await supabase
+      .from("insurance_claims")
+      .update({ notes: newValue || null })
+      .eq("id", claimId);
+
+    if (error) {
+      alert("Failed to update notes: " + error.message);
+      // Revert to database state on failure
+      loadClaims();
+    } else {
+      loadNotesOptions();
+    }
+  }
+
   function handleSort(column: string) {
     if (sortColumn === column) {
       setAscending(!ascending);
@@ -470,7 +510,21 @@ export default function App() {
                   </td>
 
                   {/* Status */}
-                  <td>{claim.status || ""}</td>
+                  <td>
+                    <select
+                      className="inline-select"
+                      value={claim.status || ""}
+                      onChange={(e) => handleUpdateStatus(claim.id, e.target.value)}
+                    >
+                      {statusOptions
+                        .filter((opt) => opt !== "All")
+                        .map((opt) => (
+                          <option key={opt} value={opt}>
+                            {opt}
+                          </option>
+                        ))}
+                    </select>
+                  </td>
 
                   {/* Wallet */}
                   <td>
@@ -496,13 +550,36 @@ export default function App() {
                   </td>
 
                   {/* Notes */}
-                  <td>{claim.notes || ""}</td>
+                  <td>
+                    <input
+                      type="text"
+                      className="inline-note-input"
+                      defaultValue={claim.notes || ""}
+                      key={claim.id + "_" + (claim.notes || "")}
+                      onBlur={(e) => handleUpdateNote(claim.id, e.target.value, claim.notes || "")}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          (e.target as HTMLInputElement).blur();
+                        }
+                      }}
+                      list="common-notes-list"
+                      placeholder="Add note..."
+                    />
+                  </td>
                 </tr>
               );
             })}
           </tbody>
         </table>
       </div>
+
+      <datalist id="common-notes-list">
+        {notesOptions
+          .filter((opt) => opt !== "All")
+          .map((opt) => (
+            <option key={opt} value={opt} />
+          ))}
+      </datalist>
     </div>
   );
 
