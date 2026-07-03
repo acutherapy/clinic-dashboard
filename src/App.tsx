@@ -79,7 +79,7 @@ export default function App() {
   const [selectedClasses, setSelectedClasses] = useState<string[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const [sortColumn, setSortColumn] = useState("number_of_treatments");
+  const [sortColumn, setSortColumn] = useState("remaining_sessions");
   const [ascending, setAscending] = useState(true);
   const [classOptions, setClassOptions] = useState<string[]>(["All"]);
 
@@ -549,8 +549,8 @@ export default function App() {
               <th onClick={() => handleSort("end_date")}>
                 Expiration Date{sortLabel("end_date")}
               </th>
-              <th onClick={() => handleSort("number_of_treatments")}>
-                Treatments{sortLabel("number_of_treatments")}
+              <th onClick={() => handleSort("remaining_sessions")}>
+                Treatments{sortLabel("remaining_sessions")}
               </th>
               <th>Priority</th>
               <th>Need Action</th>
