@@ -178,7 +178,11 @@ export default function App() {
     }
 
     if (providerFilter !== "All") {
-      query = query.eq("provider", providerFilter);
+      if (providerFilter === "No Provider") {
+        query = query.or("provider.is.null,provider.eq.");
+      } else {
+        query = query.eq("provider", providerFilter);
+      }
     }
 
     query = query.order(sortColumn, {
@@ -447,6 +451,7 @@ export default function App() {
               onChange={(e) => setProviderFilter(e.target.value)}
             >
               <option value="All">All</option>
+              <option value="No Provider">No Provider</option>
               {providerOptions.map((prov) => (
                 <option key={prov} value={prov}>
                   {prov}
