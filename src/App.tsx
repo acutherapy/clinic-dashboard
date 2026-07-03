@@ -36,6 +36,7 @@ const statusOptions = [
   "B6",
   "RFS",
   "Waiting for Schedule",
+  "Renew Auth",
 ];
 
 const commonPresets = [
