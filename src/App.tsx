@@ -38,6 +38,19 @@ const statusOptions = [
   "Waiting for Schedule",
 ];
 
+const commonPresets = [
+  "ONGOING",
+  "FOLLOW UP",
+  "SCHEDULED",
+  "B6",
+  "VA",
+  "WC",
+  "DONE",
+  "wait to RFS",
+  "REFERRAL CANCELLED",
+  "Finished"
+];
+
 export default function App() {
   const navigate = useNavigate();
   const [claims, setClaims] = useState<Claim[]>([]);
@@ -551,20 +564,34 @@ export default function App() {
 
                   {/* Notes */}
                   <td>
-                    <input
-                      type="text"
-                      className="inline-note-input"
-                      defaultValue={claim.notes || ""}
-                      key={claim.id + "_" + (claim.notes || "")}
-                      onBlur={(e) => handleUpdateNote(claim.id, e.target.value, claim.notes || "")}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") {
-                          (e.target as HTMLInputElement).blur();
+                    <select
+                      className="inline-select"
+                      value={claim.notes || ""}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (val === "__CUSTOM__") {
+                          const customVal = prompt("Enter custom note:", claim.notes || "");
+                          if (customVal !== null) {
+                            handleUpdateNote(claim.id, customVal, claim.notes || "");
+                          }
+                        } else {
+                          handleUpdateNote(claim.id, val, claim.notes || "");
                         }
                       }}
-                      list="common-notes-list"
-                      placeholder="Add note..."
-                    />
+                    >
+                      <option value="">No Note</option>
+                      {commonPresets.map((opt) => (
+                        <option key={opt} value={opt}>
+                          {opt}
+                        </option>
+                      ))}
+                      {claim.notes && !commonPresets.includes(claim.notes) && (
+                        <option key={claim.notes} value={claim.notes}>
+                          {claim.notes}
+                        </option>
+                      )}
+                      <option value="__CUSTOM__">✍️ Custom Note...</option>
+                    </select>
                   </td>
                 </tr>
               );
@@ -572,14 +599,6 @@ export default function App() {
           </tbody>
         </table>
       </div>
-
-      <datalist id="common-notes-list">
-        {notesOptions
-          .filter((opt) => opt !== "All")
-          .map((opt) => (
-            <option key={opt} value={opt} />
-          ))}
-      </datalist>
     </div>
   );
 
