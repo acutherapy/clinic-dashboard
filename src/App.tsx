@@ -249,6 +249,53 @@ export default function App() {
     }
   }
 
+  async function handleUpdateEndDate(claimId: string, newEndDate: string) {
+    // Optimistically update local state
+    setClaims((prev) =>
+      prev.map((c) => (c.id === claimId ? { ...c, end_date: newEndDate || undefined } : c))
+    );
+
+    const { error } = await supabase
+      .from("insurance_claims")
+      .update({ end_date: newEndDate || null })
+      .eq("id", claimId);
+
+    if (error) {
+      alert("Failed to update expiration date: " + error.message);
+      // Revert on failure
+      loadClaims();
+    }
+  }
+
+  async function handleUpdateRemainingSessions(claimId: string, newCount: number) {
+    // Optimistically update local state
+    setClaims((prev) =>
+      prev.map((c) =>
+        c.id === claimId
+          ? {
+              ...c,
+              remaining_sessions: newCount,
+              // If number_of_treatments is not set, set it too so we don't have mismatch
+              number_of_treatments: c.number_of_treatments ?? newCount,
+            }
+          : c
+      )
+    );
+
+    const { error } = await supabase
+      .from("insurance_claims")
+      .update({
+        remaining_sessions: newCount,
+      })
+      .eq("id", claimId);
+
+    if (error) {
+      alert("Failed to update treatments: " + error.message);
+      // Revert on failure
+      loadClaims();
+    }
+  }
+
   function handleSort(column: string) {
     if (sortColumn === column) {
       setAscending(!ascending);
@@ -475,17 +522,29 @@ export default function App() {
                   </td>
 
                   {/* Expiration Date */}
-                  <td>{claim.end_date || "N/A"}</td>
+                  <td>
+                    <input
+                      type="date"
+                      className="inline-date-input"
+                      value={claim.end_date || ""}
+                      onChange={(e) => handleUpdateEndDate(claim.id, e.target.value)}
+                    />
+                  </td>
 
                   {/* Treatments */}
                   <td>
-                    <span
-                      className={`treatment-count-text ${
+                    <input
+                      type="number"
+                      className={`inline-number-input ${
                         remainingTreatments <= 2 ? "low" : ""
                       }`}
-                    >
-                      {remainingTreatments}
-                    </span>
+                      value={remainingTreatments}
+                      onChange={(e) => {
+                        const val = parseInt(e.target.value);
+                        handleUpdateRemainingSessions(claim.id, isNaN(val) ? 0 : val);
+                      }}
+                      min="0"
+                    />
                   </td>
 
                   {/* Priority */}

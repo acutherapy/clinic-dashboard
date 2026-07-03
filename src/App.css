@@ -753,3 +753,49 @@
   color: var(--text);
   opacity: 0.5;
 }
+
+.inline-date-input {
+  padding: 4px 8px;
+  font-size: 13px;
+  font-family: inherit;
+  color: var(--text-h);
+  background-color: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  outline: none;
+  width: 100%;
+  max-width: 135px;
+  transition: all 0.2s;
+}
+
+.inline-date-input:focus {
+  background-color: var(--bg-card);
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px var(--primary-light);
+}
+
+.inline-number-input {
+  padding: 4px 8px;
+  font-size: 13px;
+  font-weight: 700;
+  font-family: var(--mono);
+  color: var(--text-h);
+  background-color: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  outline: none;
+  width: 100%;
+  max-width: 60px;
+  text-align: center;
+  transition: all 0.2s;
+}
+
+.inline-number-input:focus {
+  background-color: var(--bg-card);
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px var(--primary-light);
+}
+
+.inline-number-input.low {
+  color: var(--critical-text);
+}
