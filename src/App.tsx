@@ -18,6 +18,7 @@ type Claim = {
   last_scan?: string;
   end_date?: string;
   claim_id?: number | string;
+  provider?: string;
 };
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
@@ -52,10 +53,21 @@ const commonPresets = [
   "Finished"
 ];
 
+const providerOptions = [
+  "Kai",
+  "David",
+  "Lisa",
+  "Aya",
+  "Motomi",
+  "Hiromi",
+  "Miharu",
+];
+
 export default function App() {
   const navigate = useNavigate();
   const [claims, setClaims] = useState<Claim[]>([]);
   const [statusFilter, setStatusFilter] = useState("active");
+  const [providerFilter, setProviderFilter] = useState("All");
   const [selectedNotes, setSelectedNotes] = useState<string[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -163,6 +175,10 @@ export default function App() {
 
     if (selectedNotes.length > 0) {
       query = query.in("notes", selectedNotes);
+    }
+
+    if (providerFilter !== "All") {
+      query = query.eq("provider", providerFilter);
     }
 
     query = query.order(sortColumn, {
@@ -296,6 +312,24 @@ export default function App() {
     }
   }
 
+  async function handleUpdateProvider(claimId: string, newProvider: string) {
+    // Optimistically update local state
+    setClaims((prev) =>
+      prev.map((c) => (c.id === claimId ? { ...c, provider: newProvider || undefined } : c))
+    );
+
+    const { error } = await supabase
+      .from("insurance_claims")
+      .update({ provider: newProvider || null })
+      .eq("id", claimId);
+
+    if (error) {
+      alert("Failed to update provider: " + error.message);
+      // Revert on failure
+      loadClaims();
+    }
+  }
+
   function handleSort(column: string) {
     if (sortColumn === column) {
       setAscending(!ascending);
@@ -336,7 +370,7 @@ export default function App() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [statusFilter, selectedNotes, sortColumn, ascending]);
+  }, [statusFilter, selectedNotes, providerFilter, sortColumn, ascending]);
 
   const dashboardView = (
     <div className="container">
@@ -400,6 +434,22 @@ export default function App() {
               {statusOptions.map((status) => (
                 <option key={status} value={status}>
                   {status}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label className="filter-item">
+            Provider:
+            <select
+              className="filter-select"
+              value={providerFilter}
+              onChange={(e) => setProviderFilter(e.target.value)}
+            >
+              <option value="All">All</option>
+              {providerOptions.map((prov) => (
+                <option key={prov} value={prov}>
+                  {prov}
                 </option>
               ))}
             </select>
@@ -490,6 +540,9 @@ export default function App() {
               <th>Priority</th>
               <th>Need Action</th>
               <th>Check</th>
+              <th onClick={() => handleSort("provider")}>
+                Provider{sortLabel("provider")}
+              </th>
               <th onClick={() => handleSort("status")}>
                 Status{sortLabel("status")}
               </th>
@@ -580,6 +633,22 @@ export default function App() {
                     >
                       Check-in
                     </button>
+                  </td>
+
+                  {/* Provider */}
+                  <td>
+                    <select
+                      className="inline-select"
+                      value={claim.provider || ""}
+                      onChange={(e) => handleUpdateProvider(claim.id, e.target.value)}
+                    >
+                      <option value="">No Provider</option>
+                      {providerOptions.map((prov) => (
+                        <option key={prov} value={prov}>
+                          {prov}
+                        </option>
+                      ))}
+                    </select>
                   </td>
 
                   {/* Status */}
