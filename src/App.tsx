@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { createClient } from "@supabase/supabase-js";
 import { Routes, Route, useNavigate } from "react-router-dom";
 import "./App.css";
@@ -42,10 +42,24 @@ export default function App() {
   const navigate = useNavigate();
   const [claims, setClaims] = useState<Claim[]>([]);
   const [statusFilter, setStatusFilter] = useState("active");
-  const [notesFilter, setNotesFilter] = useState("All");
+  const [selectedNotes, setSelectedNotes] = useState<string[]>([]);
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
   const [sortColumn, setSortColumn] = useState("number_of_treatments");
   const [ascending, setAscending] = useState(true);
   const [notesOptions, setNotesOptions] = useState<string[]>(["All"]);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   async function loadNotesOptions() {
     const { data, error } = await supabase
@@ -133,8 +147,8 @@ export default function App() {
       );
     }
 
-    if (notesFilter !== "All") {
-      query = query.eq("notes", notesFilter);
+    if (selectedNotes.length > 0) {
+      query = query.in("notes", selectedNotes);
     }
 
     query = query.order(sortColumn, {
@@ -221,7 +235,7 @@ export default function App() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [statusFilter, notesFilter, sortColumn, ascending]);
+  }, [statusFilter, selectedNotes, sortColumn, ascending]);
 
   const dashboardView = (
     <div className="container">
@@ -290,20 +304,69 @@ export default function App() {
             </select>
           </label>
 
-          <label className="filter-item">
+          <div className="filter-item">
             Notes:
-            <select
-              className="filter-select"
-              value={notesFilter}
-              onChange={(e) => setNotesFilter(e.target.value)}
-            >
-              {notesOptions.map((note) => (
-                <option key={note} value={note}>
-                  {note}
-                </option>
-              ))}
-            </select>
-          </label>
+            <div className="multiselect-container" ref={dropdownRef}>
+              <button
+                type="button"
+                className="multiselect-trigger"
+                onClick={() => setIsOpen(!isOpen)}
+              >
+                {selectedNotes.length === 0
+                  ? "All"
+                  : selectedNotes.length === 1
+                  ? selectedNotes[0]
+                  : `${selectedNotes.length} Selected`}
+                <span>▼</span>
+              </button>
+
+              {isOpen && (
+                <div className="multiselect-dropdown">
+                  <div className="multiselect-actions">
+                    <button
+                      type="button"
+                      className="multiselect-action-btn"
+                      onClick={() => setSelectedNotes([])}
+                    >
+                      Clear All
+                    </button>
+                    <button
+                      type="button"
+                      className="multiselect-action-btn"
+                      onClick={() => {
+                        const allDbNotes = notesOptions.filter(n => n !== "All");
+                        setSelectedNotes(allDbNotes);
+                      }}
+                    >
+                      Select All
+                    </button>
+                  </div>
+                  {notesOptions
+                    .filter((note) => note !== "All")
+                    .map((note) => (
+                      <div className="multiselect-option" key={note}>
+                        <label>
+                          <input
+                            type="checkbox"
+                            checked={selectedNotes.includes(note)}
+                            onChange={() => {
+                              if (selectedNotes.includes(note)) {
+                                setSelectedNotes(
+                                  selectedNotes.filter((n) => n !== note)
+                                );
+                              } else {
+                                setSelectedNotes([...selectedNotes, note]);
+                              }
+                            }}
+                          />
+                          {note}
+                        </label>
+                      </div>
+                    ))}
+                </div>
+              )}
+            </div>
+          </div>
         </div>
 
         <span className="record-count">Showing {claims.length} records</span>
