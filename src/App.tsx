@@ -40,17 +40,25 @@ const statusOptions = [
   "Renew Auth",
 ];
 
-const commonPresets = [
-  "ONGOING",
-  "FOLLOW UP",
-  "SCHEDULED",
-  "B6",
-  "VA",
-  "WC",
-  "DONE",
-  "wait to RFS",
-  "REFERRAL CANCELLED",
-  "Finished"
+const classPresets = [
+  "VA-A",
+  "VA-M",
+  "WC-A",
+  "WC-M",
+  "AC-A",
+  "AC-M",
+  "AARP",
+  "AARP-UHC",
+  "ASHLink-HMSA",
+  "ASHLink-Kaiser",
+  "UHA",
+  "HMAA",
+  "Selfpay",
+  "Pack6",
+  "Pack12",
+  "Pack18",
+  "Pack24",
+  "Other"
 ];
 
 const providerOptions = [
@@ -68,12 +76,12 @@ export default function App() {
   const [claims, setClaims] = useState<Claim[]>([]);
   const [statusFilter, setStatusFilter] = useState("active");
   const [providerFilter, setProviderFilter] = useState("All");
-  const [selectedNotes, setSelectedNotes] = useState<string[]>([]);
+  const [selectedClasses, setSelectedClasses] = useState<string[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [sortColumn, setSortColumn] = useState("number_of_treatments");
   const [ascending, setAscending] = useState(true);
-  const [notesOptions, setNotesOptions] = useState<string[]>(["All"]);
+  const [classOptions, setClassOptions] = useState<string[]>(["All"]);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -87,22 +95,24 @@ export default function App() {
     };
   }, []);
 
-  async function loadNotesOptions() {
+  async function loadClassOptions() {
     const { data, error } = await supabase
       .from("insurance_claims")
       .select("notes");
 
     if (error) {
-      console.error("Error loading notes options:", error.message);
+      console.error("Error loading class options:", error.message);
       return;
     }
 
     if (data) {
-      const unique = Array.from(
+      const uniqueDb = Array.from(
         new Set(data.map((d: any) => d.notes).filter(Boolean))
       ) as string[];
-      unique.sort((a, b) => a.localeCompare(b));
-      setNotesOptions(["All", ...unique]);
+      // Combine predefined classPresets and unique notes from the database
+      const combined = Array.from(new Set([...classPresets, ...uniqueDb]));
+      combined.sort((a, b) => a.localeCompare(b));
+      setClassOptions(["All", ...combined]);
     }
   }
 
@@ -173,8 +183,8 @@ export default function App() {
       );
     }
 
-    if (selectedNotes.length > 0) {
-      query = query.in("notes", selectedNotes);
+    if (selectedClasses.length > 0) {
+      query = query.in("notes", selectedClasses);
     }
 
     if (providerFilter !== "All") {
@@ -247,7 +257,7 @@ export default function App() {
     }
   }
 
-  async function handleUpdateNote(claimId: string, newValue: string, oldValue: string) {
+  async function handleUpdateClass(claimId: string, newValue: string, oldValue: string) {
     if (newValue === oldValue) return;
 
     // Optimistically update local state
@@ -261,11 +271,11 @@ export default function App() {
       .eq("id", claimId);
 
     if (error) {
-      alert("Failed to update notes: " + error.message);
+      alert("Failed to update class: " + error.message);
       // Revert to database state on failure
       loadClaims();
     } else {
-      loadNotesOptions();
+      loadClassOptions();
     }
   }
 
@@ -349,7 +359,7 @@ export default function App() {
   }
 
   useEffect(() => {
-    loadNotesOptions();
+    loadClassOptions();
   }, []);
 
   useEffect(() => {
@@ -366,7 +376,7 @@ export default function App() {
         },
         () => {
           loadClaims();
-          loadNotesOptions();
+          loadClassOptions();
         }
       )
       .subscribe();
@@ -374,7 +384,7 @@ export default function App() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [statusFilter, selectedNotes, providerFilter, sortColumn, ascending]);
+  }, [statusFilter, selectedClasses, providerFilter, sortColumn, ascending]);
 
   const dashboardView = (
     <div className="container">
@@ -461,18 +471,18 @@ export default function App() {
           </label>
 
           <div className="filter-item">
-            Notes:
+            Class:
             <div className="multiselect-container" ref={dropdownRef}>
               <button
                 type="button"
                 className="multiselect-trigger"
                 onClick={() => setIsOpen(!isOpen)}
               >
-                {selectedNotes.length === 0
+                {selectedClasses.length === 0
                   ? "All"
-                  : selectedNotes.length === 1
-                  ? selectedNotes[0]
-                  : `${selectedNotes.length} Selected`}
+                  : selectedClasses.length === 1
+                  ? selectedClasses[0]
+                  : `${selectedClasses.length} Selected`}
                 <span>▼</span>
               </button>
 
@@ -482,7 +492,7 @@ export default function App() {
                     <button
                       type="button"
                       className="multiselect-action-btn"
-                      onClick={() => setSelectedNotes([])}
+                      onClick={() => setSelectedClasses([])}
                     >
                       Clear All
                     </button>
@@ -490,32 +500,32 @@ export default function App() {
                       type="button"
                       className="multiselect-action-btn"
                       onClick={() => {
-                        const allDbNotes = notesOptions.filter(n => n !== "All");
-                        setSelectedNotes(allDbNotes);
+                        const allDbClasses = classOptions.filter(c => c !== "All");
+                        setSelectedClasses(allDbClasses);
                       }}
                     >
                       Select All
                     </button>
                   </div>
-                  {notesOptions
-                    .filter((note) => note !== "All")
-                    .map((note) => (
-                      <div className="multiselect-option" key={note}>
+                  {classOptions
+                    .filter((cls) => cls !== "All")
+                    .map((cls) => (
+                      <div className="multiselect-option" key={cls}>
                         <label>
                           <input
                             type="checkbox"
-                            checked={selectedNotes.includes(note)}
+                            checked={selectedClasses.includes(cls)}
                             onChange={() => {
-                              if (selectedNotes.includes(note)) {
-                                setSelectedNotes(
-                                  selectedNotes.filter((n) => n !== note)
+                              if (selectedClasses.includes(cls)) {
+                                setSelectedClasses(
+                                  selectedClasses.filter((c) => c !== cls)
                                 );
                               } else {
-                                setSelectedNotes([...selectedNotes, note]);
+                                setSelectedClasses([...selectedClasses, cls]);
                               }
                             }}
                           />
-                          {note}
+                          {cls}
                         </label>
                       </div>
                     ))}
@@ -553,7 +563,7 @@ export default function App() {
               </th>
               <th>Wallet</th>
               <th onClick={() => handleSort("notes")}>
-                Notes{sortLabel("notes")}
+                Class{sortLabel("notes")}
               </th>
             </tr>
           </thead>
@@ -696,7 +706,7 @@ export default function App() {
                     )}
                   </td>
 
-                  {/* Notes */}
+                  {/* Class */}
                   <td>
                     <select
                       className="inline-select"
@@ -704,27 +714,27 @@ export default function App() {
                       onChange={(e) => {
                         const val = e.target.value;
                         if (val === "__CUSTOM__") {
-                          const customVal = prompt("Enter custom note:", claim.notes || "");
+                          const customVal = prompt("Enter custom class:", claim.notes || "");
                           if (customVal !== null) {
-                            handleUpdateNote(claim.id, customVal, claim.notes || "");
+                            handleUpdateClass(claim.id, customVal, claim.notes || "");
                           }
                         } else {
-                          handleUpdateNote(claim.id, val, claim.notes || "");
+                          handleUpdateClass(claim.id, val, claim.notes || "");
                         }
                       }}
                     >
-                      <option value="">No Note</option>
-                      {commonPresets.map((opt) => (
+                      <option value="">No Class</option>
+                      {classPresets.map((opt) => (
                         <option key={opt} value={opt}>
                           {opt}
                         </option>
                       ))}
-                      {claim.notes && !commonPresets.includes(claim.notes) && (
+                      {claim.notes && !classPresets.includes(claim.notes) && (
                         <option key={claim.notes} value={claim.notes}>
                           {claim.notes}
                         </option>
                       )}
-                      <option value="__CUSTOM__">✍️ Custom Note...</option>
+                      <option value="__CUSTOM__">✍️ Custom Class...</option>
                     </select>
                   </td>
                 </tr>
