@@ -179,7 +179,7 @@ export default function App() {
   }
 
   async function useOneSession(claimId: string, patientName: string) {
-    const ok = window.confirm(`Use 1 session for ${patientName}?`);
+    const ok = window.confirm(`Check in ${patientName}?`);
     const claim = claims.find((c) => c.id === claimId);
 
     if (!claim) {
@@ -441,7 +441,7 @@ export default function App() {
               </th>
               <th>Priority</th>
               <th>Need Action</th>
-              <th>Action</th>
+              <th>Check</th>
               <th onClick={() => handleSort("status")}>
                 Status{sortLabel("status")}
               </th>
@@ -518,7 +518,7 @@ export default function App() {
                       className={`btn btn-action ${remainingTreatments === 0 ? "btn-danger" : ""}`}
                       onClick={() => useOneSession(claim.id, claim.patient_name ?? "")}
                     >
-                      Use 1 Session
+                      Check-in
                     </button>
                   </td>
 
