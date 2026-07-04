@@ -799,3 +799,13 @@
 .inline-number-input.low {
   color: var(--critical-text);
 }
+
+.inline-select-short {
+  max-width: 70px !important;
+  text-align: center;
+}
+
+.inline-select.low {
+  color: var(--critical-text);
+  font-weight: 700;
+}

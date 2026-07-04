@@ -601,18 +601,26 @@ export default function App() {
 
                   {/* Treatments */}
                   <td>
-                    <input
-                      type="number"
-                      className={`inline-number-input ${
+                    <select
+                      className={`inline-select inline-select-short ${
                         remainingTreatments <= 2 ? "low" : ""
                       }`}
                       value={remainingTreatments}
                       onChange={(e) => {
-                        const val = parseInt(e.target.value);
-                        handleUpdateRemainingSessions(claim.id, isNaN(val) ? 0 : val);
+                        handleUpdateRemainingSessions(claim.id, parseInt(e.target.value) || 0);
                       }}
-                      min="0"
-                    />
+                    >
+                      {Array.from({ length: 25 }, (_, i) => (
+                        <option key={i} value={i}>
+                          {i}
+                        </option>
+                      ))}
+                      {remainingTreatments > 24 && (
+                        <option key={remainingTreatments} value={remainingTreatments}>
+                          {remainingTreatments}
+                        </option>
+                      )}
+                    </select>
                   </td>
 
                   {/* Priority */}
